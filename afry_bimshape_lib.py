@@ -233,3 +233,108 @@ def assign_property_set(ifc_file, owner_history, element, property_set):
             property_set
         )
         return ifc_file
+
+def create_volume_from_point(ifc_file, context, owner_history, storey, geometry, size=10.0, attributes={}):
+    """
+    Creates a cube in an IFC file from a given point.
+    Args:
+        ifc_file: The IFC file object where the cube will be created.
+        geometry: A point geometry object with x and y attributes.
+        size (float, optional): The size of the cube. Defaults to 10.0.
+        attributes (dict, optional): A dictionary of attributes to be assigned to the cube. Defaults to {}.
+    Returns:
+        None
+    """
+    # Create placement for the cube
+    point_coords = (geometry.x, geometry.y, 0.0) # Assuming z=0 for simplicity
+    origin = ifc_file.createIfcCartesianPoint(point_coords) # TODO should be possible to set an origin point
+    axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+    ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
+    placement = ifc_file.createIfcAxis2Placement3D(origin, axis, ref_direction)
+    local_placement = ifc_file.createIfcLocalPlacement(None, placement)
+
+    # Create a cube profile
+    half_size = size / 2.0
+    profile = ifc_file.createIfcRectangleProfileDef(
+        "AREA", None,
+        ifc_file.createIfcAxis2Placement2D(ifc_file.createIfcCartesianPoint((0.0, 0.0))),
+        size, size
+    )
+
+    # Create the extruded solid
+    extruded_solid = ifc_file.createIfcExtrudedAreaSolid(
+        profile,
+        ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc_file.createIfcDirection((1.0, 0.0, 0.0))
+        ),
+        ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+        size
+    )
+
+    # Create shape representation
+    shape_representation = ifc_file.createIfcShapeRepresentation(
+        context, "Body", "SweptSolid", [extruded_solid]
+    )
+    product_shape = ifc_file.createIfcProductDefinitionShape(
+        None, None, [shape_representation]
+    )
+
+    # Create property set
+    property_set = create_property_set(ifc_file, owner_history, attributes)
+
+    # Create building element proxy
+    element = create_building_element_proxy(ifc_file, owner_history, attributes, local_placement, product_shape, storey)
+    
+    # Assign property set to the element
+    ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
+
+def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometry, depth=0.1, attributes={}):
+
+    # Create GIS geometry portion
+    
+    exterior_coords = list(geometry.exterior.coords)
+    point_coords = [ifc_file.createIfcCartesianPoint((x, y, 0.)) for x, y in exterior_coords[:-1]]
+    
+    
+    
+    
+    axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+    ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
+
+    origin = ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+    placement = ifc_file.createIfcAxis2Placement3D(origin, axis, ref_direction)
+    local_placement = ifc_file.createIfcLocalPlacement(None, placement)
+    
+    # Create swept area solid
+    gis_profile = ifc_file.createIfcArbitraryClosedProfileDef(
+        "AREA", None,
+        ifc_file.createIfcPolyline(point_coords)
+    )
+    extruded_solid = ifc_file.createIfcExtrudedAreaSolid(
+        SweptArea=gis_profile,
+        Position=ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint((0.0, 0., 0.0))
+        ),
+        ExtrudedDirection=axis,
+        Depth=depth
+    )
+
+    # Create shape representation
+    shape_representation = ifc_file.createIfcShapeRepresentation(
+        context, "Body", "SweptSolid", [extruded_solid])
+
+    product_shape = ifc_file.createIfcShapeRepresentation(
+        ContextOfItems=context, RepresentationIdentifier="Body", RepresentationType="SweptSolid", 
+        Items=[shape_representation]
+    )
+
+    # Create property set
+    property_set = create_property_set(ifc_file, owner_history, attributes)
+
+    # Create building element proxy
+    element = create_building_element_proxy(ifc_file, owner_history, attributes, local_placement, product_shape, storey)
+    
+    # Assign property set to the element
+    ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
