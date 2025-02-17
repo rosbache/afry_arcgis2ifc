@@ -168,3 +168,68 @@ def create_styled_item(ifc_file, shape, style):
         [style],
         None
     )
+
+def create_property_set(ifc_file, owner_history, attributes):
+    """
+    Creates an IFC property set with the given attributes.
+    Args:
+        ifc_file (ifcopenshell.file): The IFC file object where the property set will be created.
+        owner_history (ifcopenshell.entity_instance): The owner history for the property set.
+        attributes (dict): A dictionary of attribute names and their corresponding values.
+    Returns:
+        ifcopenshell.entity_instance: The created IFC property set.
+    """
+
+    # Create property set
+    property_values = []
+    for key, value in attributes.items():
+        if value is not None:
+            prop = ifc_file.createIfcPropertySingleValue(
+                key, None,
+                ifc_file.create_entity("IfcLabel", str(value)),
+                None
+            )
+            property_values.append(prop)
+
+    property_set = ifc_file.createIfcPropertySet(
+        ifcopenshell.guid.new(),
+        owner_history,
+        "FKB egenskaper",
+        None,
+        property_values
+    )
+
+    return property_set
+
+def create_building_element_proxy(ifc_file, owner_history, attributes, local_placement, product_shape, storey):
+        # Create building element proxy
+        element = ifc_file.createIfcBuildingElementProxy(
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=owner_history,
+            Name=str(attributes),
+            ObjectPlacement=local_placement,
+            Representation=product_shape
+        )
+
+        # After element creation, create containment relationship
+        ifc_file.createIfcRelContainedInSpatialStructure(
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=owner_history,
+            Name="Storey Container",
+            Description=None,
+            RelatingStructure=storey,  # Storey, lowest level in ifc hierarchy
+            RelatedElements=[element]
+        )
+
+        return element
+
+def assign_property_set(ifc_file, owner_history, element, property_set):
+        ifc_file.createIfcRelDefinesByProperties(
+            ifcopenshell.guid.new(),
+            owner_history,
+            None,
+            None,
+            [element],
+            property_set
+        )
+        return ifc_file
