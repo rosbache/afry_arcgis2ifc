@@ -162,12 +162,12 @@ def create_new_ifc_file(person_given_name="Eirik", person_family_name="Rosbach",
 #     )
 #     return style
 
-def create_styled_item(ifc_file, shape, style):
-    return ifc_file.createIfcStyledItem(
-        shape,
-        [style],
-        None
-    )
+# def create_styled_item(ifc_file, shape, style):
+#     return ifc_file.createIfcStyledItem(
+#         shape,
+#         [style],
+#         None
+#     )
 
 def create_property_set(ifc_file, owner_history, attributes):
     """
@@ -291,18 +291,26 @@ def create_volume_from_point(ifc_file, context, owner_history, storey, geometry,
     ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
 
 def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometry, depth=0.1, attributes={}):
+    """
+    Creates a volume from a given polygon geometry and adds it to an IFC file.
+    Args:
+        ifc_file: The IFC file to which the volume will be added.
+        context: The IFC context for the shape representation.
+        owner_history: The owner history for the IFC elements.
+        storey: The building storey to which the volume belongs.
+        geometry: The polygon geometry used to create the volume.
+        depth (float, optional): The depth of the extruded volume. Defaults to 0.1.
+        attributes (dict, optional): Additional attributes for the building element proxy. Defaults to {}.
+    Returns:
+        None
+    """
 
     # Create GIS geometry portion
     
     exterior_coords = list(geometry.exterior.coords)
     point_coords = [ifc_file.createIfcCartesianPoint((x, y, 0.)) for x, y in exterior_coords[:-1]]
-    
-    
-    
-    
     axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
     ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
-
     origin = ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0))
     placement = ifc_file.createIfcAxis2Placement3D(origin, axis, ref_direction)
     local_placement = ifc_file.createIfcLocalPlacement(None, placement)
@@ -328,6 +336,51 @@ def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometr
     product_shape = ifc_file.createIfcShapeRepresentation(
         ContextOfItems=context, RepresentationIdentifier="Body", RepresentationType="SweptSolid", 
         Items=[shape_representation]
+    )
+
+    # Create property set
+    property_set = create_property_set(ifc_file, owner_history, attributes)
+
+    # Create building element proxy
+    element = create_building_element_proxy(ifc_file, owner_history, attributes, local_placement, product_shape, storey)
+    
+    # Assign property set to the element
+    ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
+
+def create_volume_from_linestring(ifc_file, context, owner_history, storey, geometry, radius=0.1, attributes={}):
+# Get line coordinates
+    line_coords = list(geometry.coords)
+    line_points = [ifc_file.createIfcCartesianPoint((x, y, 0.)) for x, y in line_coords]
+    
+    # Create polyline curve
+    polyline = ifc_file.createIfcPolyline(line_points)
+    # Create placement
+    origin = ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+    axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+    ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
+    placement = ifc_file.createIfcAxis2Placement3D(origin, axis, ref_direction)
+    local_placement = ifc_file.createIfcLocalPlacement(None, placement)
+
+    # Create swept disk solid
+    swept_disk = ifc_file.createIfcSweptDiskSolid(
+        Directrix=polyline,
+        Radius=radius,  
+        InnerRadius=None,
+        StartParam=0.0,  # Required start parameter
+        EndParam=1.0    # Required end parameter
+    )
+    
+    # Create shape representation
+    shape_representation = ifc_file.createIfcShapeRepresentation(
+        ContextOfItems=context,
+        RepresentationIdentifier="Body",
+        RepresentationType="SweptSolid",
+        Items=[swept_disk]
+    )
+
+    product_shape = ifc_file.createIfcShapeRepresentation(
+    ContextOfItems=context, RepresentationIdentifier="Body", RepresentationType="SweptSolid", 
+    Items=[shape_representation]
     )
 
     # Create property set
