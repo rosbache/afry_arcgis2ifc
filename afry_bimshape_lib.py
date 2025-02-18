@@ -16,6 +16,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.owner
 import ifcopenshell.api.material
 import time
+from typing import Dict, List, Union
 
 def create_new_ifc_file(person_given_name="Eirik", person_family_name="Rosbach", organization_name="AFRY Norway AS"):
     """
@@ -234,7 +235,7 @@ def assign_property_set(ifc_file, owner_history, element, property_set):
         )
         return ifc_file
 
-def create_volume_from_point(ifc_file, context, owner_history, storey, geometry, size=10.0, attributes={}):
+def create_volume_from_point(ifc_file, context, owner_history, storey, geometry, size=10.0, attributes={}, styles={}):  
     """
     Creates a cube in an IFC file from a given point.
     Args:
@@ -281,6 +282,20 @@ def create_volume_from_point(ifc_file, context, owner_history, storey, geometry,
         None, None, [shape_representation]
     )
 
+    # Apply style based on attributes
+    matching_style = get_matching_style(attributes, styles)
+    if matching_style and matching_style in styles:
+        style = styles[matching_style]
+        # print(f"Applying style '{matching_style}' to element with attributes: {attributes}")
+        try:
+            ifcopenshell.api.style.assign_representation_styles(
+                ifc_file,
+                shape_representation=shape_representation,
+                styles=[style['style']]  # Use the actual style object from the dictionary
+            )
+        except Exception as e:
+            print(f"Failed to apply style: {e}")
+
     # Create property set
     property_set = create_property_set(ifc_file, owner_history, attributes)
 
@@ -290,7 +305,7 @@ def create_volume_from_point(ifc_file, context, owner_history, storey, geometry,
     # Assign property set to the element
     ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
 
-def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometry, depth=0.1, attributes={}):
+def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometry, depth=0.1, attributes={}, styles={}):
     """
     Creates a volume from a given polygon geometry and adds it to an IFC file.
     Args:
@@ -347,6 +362,35 @@ def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometr
     # Assign property set to the element
     ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
 
+   # Apply style based on attributes
+    matching_style = get_matching_style(attributes, styles)
+    if matching_style and matching_style in styles:
+        style = styles[matching_style]
+        # print(f"Applying style '{matching_style}' to element with attributes: {attributes}")
+        try:
+            ifcopenshell.api.style.assign_representation_styles(
+                ifc_file,
+                shape_representation=shape_representation,
+                styles=[style['style']]  # Use the actual style object from the dictionary
+            )
+        except Exception as e:
+            print(f"Failed to apply style: {e}")
+
+def get_matching_style(attributes: dict, styles_info: dict) -> str:
+    """Find matching style based on attributes and style definitions"""
+    for style_name, style_info in styles_info.items():
+        attribute_name = style_info.get('attribute')
+        allowed_values = style_info.get('values', [])
+        
+        if attribute_name and attribute_name in attributes:
+            try:
+                attr_value = int(float(attributes[attribute_name]))
+                if attr_value in allowed_values or not allowed_values:  # Empty list means catch-all
+                    return style_name
+            except (ValueError, TypeError):
+                continue
+    return None
+
 def create_volume_from_linestring(ifc_file, context, owner_history, storey, geometry, radius=0.1, attributes={}):
 # Get line coordinates
     line_coords = list(geometry.coords)
@@ -391,3 +435,53 @@ def create_volume_from_linestring(ifc_file, context, owner_history, storey, geom
     
     # Assign property set to the element
     ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
+
+def load_style_settings(json_path: str) -> Dict:
+    """Load FKB style settings from JSON file"""
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Style settings file not found: {json_path}")
+    except json.JSONDecodeError:
+        raise ValueError(f"Invalid JSON format in {json_path}")
+
+def create_styles(ifc_file, styles_raw: Dict) -> Dict:
+    """Create IFC styles from JSON settings using ifcopenshell.api"""
+    styles = {}
+    
+    for style_name, style_info in styles_raw.items():
+        # Create style using API
+        style = ifcopenshell.api.style.add_style(
+            ifc_file, 
+            f"fkb_bygning_{style_name}",
+            'IfcSurfaceStyle'
+        )
+        
+        # Convert RGB values (0-255) to IFC color values (0-1)
+        rgb = style_info["color"]
+        r, g, b = rgb[0] / 255.0, rgb[1] / 255.0, rgb[2] / 255.0
+        
+        # Add surface properties using API
+        ifcopenshell.api.style.add_surface_style(
+            ifc_file,
+            style=style, 
+            ifc_class="IfcSurfaceStyleShading", 
+            attributes={
+                "SurfaceColour": { 
+                    "Name": f"FKB_bygning_{style_name}", 
+                    "Red": r, 
+                    "Green": g, 
+                    "Blue": b 
+                }
+            }
+        )
+        
+        # Store style with its attribute and values
+        styles[style_name] = {
+            'style': style,
+            'attribute': style_info['attribute'],
+            'values': style_info['values']
+        }
+    
+    return styles   
