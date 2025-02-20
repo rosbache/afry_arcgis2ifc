@@ -9,7 +9,9 @@ Source: https://register.geonorge.no/data/documents/tegneregler_N5%20Kartdata_sp
 ## How to run
 Text
 
-''' python gis2bim.py -i "C:\Users\HTO334\OneDrive - AFRY\Documents\GitHub\afry_arcgis2ifc" -o "Samferdsel.ifc" -s "fkb-vei_style.json" '''
+'''
+python gis2bim.py -i "C:\Users\HTO334\OneDrive - AFRY\Documents\GitHub\afry_arcgis2ifc" -o "Samferdsel.ifc" -s "fkb-vei_style.json" 
+'''
 
 ## Examples
 From SOSI-file in the software SOSI-vis:
