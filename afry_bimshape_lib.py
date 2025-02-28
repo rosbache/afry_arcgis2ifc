@@ -149,26 +149,6 @@ def create_new_ifc_file(person_given_name="Eirik", person_family_name="Rosbach",
 
     return ifc_file, context, owner_history, building, storey
 
-# def create_style(ifc_file):
-#     style = ifc_file.createIfcSurfaceStyle(
-#         "Building Style", "BOTH",
-#         [
-#             ifc_file.createIfcSurfaceStyleRendering(
-#                 ifc_file.createIfcColourRgb("color", 0.6, 0.369, 0.141),
-#                 0.0,  # Transparency
-#                 None, None, None, None, None, None, 
-#                 ifc_file.createIfcNormalizedRatioMeasure(0.5)
-#             )
-#         ]
-#     )
-#     return style
-
-# def create_styled_item(ifc_file, shape, style):
-#     return ifc_file.createIfcStyledItem(
-#         shape,
-#         [style],
-#         None
-#     )
 
 def create_property_set(ifc_file, owner_history, attributes):
     """
@@ -247,7 +227,7 @@ def create_volume_from_point(ifc_file, context, owner_history, storey, geometry,
         None
     """
     # Create placement for the cube
-    point_coords = (geometry.x, geometry.y, 0.0) # Assuming z=0 for simplicity
+    point_coords = (geometry.x, geometry.y, 20.0) # Assuming z=0 for simplicity
     origin = ifc_file.createIfcCartesianPoint(point_coords) # TODO should be possible to set an origin point
     axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
     ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
@@ -286,7 +266,7 @@ def create_volume_from_point(ifc_file, context, owner_history, storey, geometry,
     matching_style = get_matching_style(attributes, styles)
     if matching_style and matching_style in styles:
         style = styles[matching_style]
-        # print(f"Applying style '{matching_style}' to element with attributes: {attributes}")
+        print(f"Applying style '{matching_style}' to element with attributes: {attributes}")
         try:
             ifcopenshell.api.style.assign_representation_styles(
                 ifc_file,
@@ -322,8 +302,19 @@ def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometr
 
     # Create GIS geometry portion
     
+    # exterior_coords = list(geometry.exterior.coords)
+    # point_coords = [ifc_file.createIfcCartesianPoint((x, y, z)) for x, y, z in exterior_coords[:-1]]
     exterior_coords = list(geometry.exterior.coords)
-    point_coords = [ifc_file.createIfcCartesianPoint((x, y, 0.)) for x, y in exterior_coords[:-1]]
+    point_coords = []
+    for coord in exterior_coords[:-1]:  # Skip last point as it's the same as first for polygons
+        # Check if coordinate has z value
+        if len(coord) == 2:
+            x, y = coord
+            z = 0.0  # Default z value
+        else:
+            x, y, z = coord
+        point_coords.append(ifc_file.createIfcCartesianPoint((x, y, z)))
+    
     axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
     ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
     origin = ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0))
@@ -347,11 +338,13 @@ def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometr
     # Create shape representation
     shape_representation = ifc_file.createIfcShapeRepresentation(
         context, "Body", "SweptSolid", [extruded_solid])
-
-    product_shape = ifc_file.createIfcShapeRepresentation(
-        ContextOfItems=context, RepresentationIdentifier="Body", RepresentationType="SweptSolid", 
-        Items=[shape_representation]
+    product_shape = ifc_file.createIfcProductDefinitionShape(
+        None, None, [shape_representation]
     )
+    # product_shape = ifc_file.createIfcShapeRepresentation(
+    #     ContextOfItems=context, RepresentationIdentifier="Body", RepresentationType="SweptSolid", 
+    #     Items=[shape_representation]
+    # )
 
     # Create property set
     property_set = create_property_set(ifc_file, owner_history, attributes)
@@ -378,26 +371,64 @@ def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometr
 
 def get_matching_style(attributes: dict, styles_info: dict) -> str:
     """Find matching style based on attributes and style definitions"""
+    # Clean attribute names in the input dictionary
+    cleaned_attributes = {k.strip(): v for k, v in attributes.items()}
+    
     for style_name, style_info in styles_info.items():
-        attribute_name = style_info.get('attribute')
+        attribute_name = style_info.get('attribute', '').strip()  # Clean style attribute name
+        # print(f"Attribute name: {attribute_name}")
         allowed_values = style_info.get('values', [])
+        # print(f"Allowed values: {allowed_values}")
         
-        if attribute_name and attribute_name in attributes:
+        if attribute_name and attribute_name in cleaned_attributes:
+            attr_value = cleaned_attributes[attribute_name]
+            
+            # Try numeric comparison first
             try:
-                attr_value = int(float(attributes[attribute_name]))
-                if attr_value in allowed_values or not allowed_values:  # Empty list means catch-all
+                numeric_attr = int(float(attr_value))
+                if numeric_attr in allowed_values or not allowed_values:
                     return style_name
             except (ValueError, TypeError):
-                continue
+                # If numeric conversion fails, try string comparison
+                if str(attr_value) in [str(v) for v in allowed_values] or not allowed_values:
+                    return style_name
+                
     return None
 
-def create_volume_from_linestring(ifc_file, context, owner_history, storey, geometry, radius=0.1, attributes={}):
-# Get line coordinates
+def create_volume_from_linestring(ifc_file, context, owner_history, storey, geometry, radius=0.1, attributes={}, styles={}):
+    """
+    Creates a volume from a linestring geometry in an IFC file.
+    Args:
+        ifc_file: The IFC file object where the volume will be created.
+        context: The context for the shape representation.
+        owner_history: The owner history for the IFC elements.
+        storey: The building storey where the element will be placed.
+        geometry: The linestring geometry used to create the volume.
+        radius (float, optional): The radius of the swept disk solid. Defaults to 0.1.
+        attributes (dict, optional): A dictionary of attributes for the element. Defaults to {}.
+        styles (dict, optional): A dictionary of styles to apply to the element. Defaults to {}.
+    Returns:
+        None
+    
+    Updates the IFC file with the new volume element.
+    
+    """
+    # Get line coordinates
     line_coords = list(geometry.coords)
-    line_points = [ifc_file.createIfcCartesianPoint((x, y, 0.)) for x, y in line_coords]
+    # line_points = [ifc_file.createIfcCartesianPoint((x, y, z)) for x, y, z in line_coords]
+    # exterior_coords = list(geometry.exterior.coords)
+    point_coords = []
+    for coord in line_coords:
+        # Check if coordinate has z value
+        if len(coord) == 2:
+            x, y = coord
+            z = 0.0  # Default z value
+        else:
+            x, y, z = coord
+        point_coords.append(ifc_file.createIfcCartesianPoint((x, y, z)))
     
     # Create polyline curve
-    polyline = ifc_file.createIfcPolyline(line_points)
+    polyline = ifc_file.createIfcPolyline(point_coords)
     # Create placement
     origin = ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0))
     axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
@@ -421,11 +452,13 @@ def create_volume_from_linestring(ifc_file, context, owner_history, storey, geom
         RepresentationType="SweptSolid",
         Items=[swept_disk]
     )
-
-    product_shape = ifc_file.createIfcShapeRepresentation(
-    ContextOfItems=context, RepresentationIdentifier="Body", RepresentationType="SweptSolid", 
-    Items=[shape_representation]
+    product_shape = ifc_file.createIfcProductDefinitionShape(
+        None, None, [shape_representation]
     )
+    # product_shape = ifc_file.createIfcShapeRepresentation(
+    # ContextOfItems=context, RepresentationIdentifier="Body", RepresentationType="SweptSolid", 
+    # Items=[shape_representation]
+    # )
 
     # Create property set
     property_set = create_property_set(ifc_file, owner_history, attributes)
@@ -435,6 +468,25 @@ def create_volume_from_linestring(ifc_file, context, owner_history, storey, geom
     
     # Assign property set to the element
     ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
+
+    # Apply style based on attributes
+    matching_style = get_matching_style(attributes, styles)
+    # print(f'Attributes: {attributes}')
+    # print(f'Styles: {styles}') 
+    # print(f'Matching style: {matching_style}')
+    
+  
+    if matching_style and matching_style in styles:
+        style = styles[matching_style]
+        # print(f"Applying style '{matching_style}' to element with attributes: {attributes}")
+        try:
+            ifcopenshell.api.style.assign_representation_styles(
+                ifc_file,
+                shape_representation=shape_representation,
+                styles=[style['style']]  # Use the actual style object from the dictionary
+            )
+        except Exception as e:
+            print(f"Failed to apply style: {e}")
 
 def load_style_settings(json_path: str) -> Dict:
     """Load FKB style settings from JSON file"""
