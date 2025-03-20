@@ -15,7 +15,7 @@ python gis2bim.py -i "C:\Users\HTO334\OneDrive - AFRY\Documents\GitHub\afry_arcg
 
 ## Examples
 3D-buildins with properties extraced from 2d footprint
-![image](https://github.com/user-attachments/assets/e5f9d878-d473-4837-bd97-a4ca36258d7a)
+![image](https://github.com/user-attachments/assets/2745899b-df6c-4738-91fa-8d56dcde70d4)
 
 From SOSI-file in the software SOSI-vis:
 ![sosi-vis](https://github.com/user-attachments/assets/ed25147d-812b-44f8-960d-d46a39742adf)
