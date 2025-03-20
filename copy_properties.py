@@ -24,6 +24,10 @@ import ifcopenshell.util.shape
 import numpy as np
 from typing import Dict, Tuple, List, Union
 import json
+import time
+import argparse
+from datetime import datetime
+
 import afry_bimshape_lib
 
 def get_geometry_bounds(shape):
@@ -159,8 +163,7 @@ def copy_properties(source_elem, target_elem, ifc_target_file, owner_history):
                     None,
                     [target_elem],
                     new_pset
-                )
-                # print(f"Copied property set: {source_pset.Name}")
+                )                
         except Exception as e:
             print(f"Warning: Failed to copy property set {source_pset.Name}: {e}")
 
@@ -175,7 +178,6 @@ def copy_matching_properties(source_file, target_file, overlapping, styles):
         if not source_elem:
             continue
             
-        # print(f"\nProcessing source element: {source_elem.is_a()}")
         if not matches:
             print(f"No matching elements found for {source_id}")
             continue
@@ -186,7 +188,6 @@ def copy_matching_properties(source_file, target_file, overlapping, styles):
             if not target_elem:
                 continue
                 
-            # print(f"  Processing match: {target_elem.is_a()} (distance: {dist:.2f})")
             # Copy properties
             copy_properties(source_elem, target_elem, target_file, owner_history)
             # Apply style based on copied properties
@@ -216,6 +217,7 @@ def apply_style_to_element(element, ifc_file, styles):
             # Get the shape representation directly from element
             if element.Representation and element.Representation.Representations:
                 shape_representation = element.Representation.Representations[0]
+                
                 # Create styled item
                 ifcopenshell.api.style.assign_representation_styles(
                 ifc_file,
@@ -228,19 +230,47 @@ def apply_style_to_element(element, ifc_file, styles):
 
     return False
 
+def parse_arguments():
+    """Parse command line arguments"""
+      
+    parser = argparse.ArgumentParser(description='Copy properties from 2D footprints to 3D objects in IFC file')
+    parser.add_argument('--input-footprint-file', '-f', 
+                       type=str, 
+                       required=True,
+                       help='Input IFC file containing 2D footprints')
+    parser.add_argument('--input-target-file', '-v', 
+                       type=str, 
+                       required=True,
+                       help='Input IFC file containing 3D volumes to be updated')
+    parser.add_argument('--output-file', '-o',
+                       type=str,
+                       required=True,
+                       help='Output IFC file name')
+    parser.add_argument('--style-file', '-s',
+                       type=str,
+                       required=True,
+                       help='JSON file containing styling information')
+    return parser.parse_args()
+
 def main():
+    # Parse command line arguments
+    args = parse_arguments()
+    
+    start_time = time.time()
+    start_time_readable = datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S')
+    print(f'Start time: {start_time_readable}')
     
     # Open IFC files
     print("\nOpening IFC files...")
     # file_footprint = ifcopenshell.open('Bygning.ifc') # 2D footprint of buildings
     # file_target = ifcopenshell.open('bygninger_Stakkevollvegen.ifc') # 3D model of buildings
 
-    file_footprint = ifcopenshell.open('Bygning_gjonnes.ifc') # 2D footprint of buildings
-    file_target = ifcopenshell.open('Gjønnes_bygninger.ifc') # 3D model of buildings    
+    file_footprint = ifcopenshell.open(args.input_footprint_file) # 2D footprint of buildings
+    file_target = ifcopenshell.open(args.input_target_file) # 3D model of buildings
     
     # Load styles
     print("\nLoading styles...")
-    styles_raw = afry_bimshape_lib.load_style_settings('fkb-bygning_style.json')
+    styles_raw = afry_bimshape_lib.load_style_settings(args.style_file)
     styles = afry_bimshape_lib.create_styles2(file_target, styles_raw)
     print(f"Loaded {len(styles)} styles")
     # print(styles['Bolig'])
@@ -264,9 +294,17 @@ def main():
     copy_matching_properties(file_footprint, file_target, overlapping, styles)
 
     # Save modified file
-    output_path = 'bygninger_gjonnes_with_properties.ifc'
+    output_path = args.output_file
     file_target.write(output_path)
     print(f"\nSaved modified file as: {output_path}")
 
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Elapsed time: {elapsed_time:.2f} seconds")
+
 if __name__ == "__main__":
     main()
+    
+    # Example usage:
+    # python copy_properties.py -f path/to/footprint.ifc -v path/to/volume.ifc -o path/to/output.ifc -s path/to/styles.json
+    # python copy_properties.py -f gjonnes_footprint.ifc -v gjonnes_3d.ifc -o gjonnes_combined.ifc -s fkb-bygning_style.json
