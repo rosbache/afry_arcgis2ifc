@@ -15,6 +15,10 @@ This script processes two IFC files: one containing 2D footprints of buildings a
 
 The script uses the `ifcopenshell` library for handling IFC files and the `afry_bimshape_lib` for style management.
 
+Example usage:
+python copy_properties.py -f path/to/footprint.ifc -v path/to/volume.ifc -o path/to/output.ifc -s path/to/styles.json
+python copy_properties.py -f gjonnes_footprint.ifc -v gjonnes_3d.ifc -o gjonnes_combined.ifc -s fkb-bygning_style.json
+
 '''
 
 import ifcopenshell
@@ -93,7 +97,7 @@ def get_shape_bbox_centroid(ifc_file) -> Dict[str, Tuple[np.ndarray, any, np.nda
 
 def find_overlapping_bbox(bboxes, centroids):
     """Find overlapping bounding boxes and return mapping"""
-
+    # centroids of volume and bounding box of footprint is used to find overlapping geometries
     overlapping = {}
     for bbox_id, (_, _, bbox) in bboxes.items():
         overlapping[bbox_id] = []
