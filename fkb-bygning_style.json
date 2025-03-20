@@ -28,5 +28,15 @@
         "attribute": "BYGGTYP_NB",
         "values": [],
         "color": [115, 163, 212]            
+    },
+    "Annen Bygning": {
+        "attribute": "OBJTYPE",
+        "values": ["AnnenBygning"],
+        "color": [220, 220, 220]            
+    },
+    "Takoverbygg": {
+        "attribute": "OBJTYPE",
+        "values": ["Takoverbygg"],
+        "color": [0, 0, 0]            
     }
 }
