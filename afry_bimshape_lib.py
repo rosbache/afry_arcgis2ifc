@@ -227,7 +227,7 @@ def create_volume_from_point(ifc_file, context, owner_history, storey, geometry,
         None
     """
     # Create placement for the cube
-    point_coords = (geometry.x, geometry.y, 20.0) # Assuming z=0 for simplicity
+    point_coords = (geometry.x, geometry.y, geometry.z) # Assuming z=0 for simplicity
     origin = ifc_file.createIfcCartesianPoint(point_coords) # TODO should be possible to set an origin point
     axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
     ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
@@ -536,4 +536,119 @@ def create_styles(ifc_file, styles_raw: Dict) -> Dict:
             'values': style_info['values']
         }
     
-    return styles   
+    return styles
+
+def read_json_mapping_file(json_file):
+    '''Load config from json filefile.'''
+
+    # Load the JSON file
+    try:
+        with open(json_file, 'r') as file:
+            mapping = json.load(file)
+
+        # Convert values to tuple
+        for source_pset, variables in mapping.items():
+            for source_var, target in variables.items():
+                variables[source_var] = tuple(target)
+    except FileNotFoundError:
+        print(f"Error: The file {json_file} was not found.")
+    except json.JSONDecodeError:
+        print(f"Error: The file {json_file} is not a valid JSON.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+    return mapping
+
+def mapping_properties(ifc_file, mapping_rules):
+    '''Map a attribute value in source pset to a target attribute in a target pset'''
+
+    # Format:
+    #     mapping = {
+    #     'SourcePsetName': {
+    #         'SourceVariableName': ('TargetPsetName', 'TargetVariableName')
+    #     }
+    # }
+
+    for element in ifc_file.by_type('IfcElement'):
+        # Find source pset in the element
+        for source_pset_name, variables in mapping_rules.items():
+            source_pset = find_pset(element, source_pset_name)        
+            if source_pset: # Source pset exists:            
+                
+                for source_var, (target_pset_name, target_var) in variables.items():
+                    
+                    # Find the source property
+                    source_property = next((prop for prop in source_pset.HasProperties if prop.Name == source_var), None)
+                    if source_property: # Soruce property exists
+                        
+                        # Find or create the target property set
+                        target_pset = find_pset(element, target_pset_name)
+                        if not target_pset:
+                            target_pset = ifc_file.create_entity('IfcPropertySet', Name=target_pset_name)
+                            ifc_file.create_entity('IfcRelDefinesByProperties', RelatingPropertyDefinition=target_pset, RelatedObjects=[element])
+                       
+                        # Find or create the target property
+                        target_property = next((prop for prop in target_pset.HasProperties if prop.Name == target_var), None)
+                        if not target_property:
+                            target_property = ifc_file.create_entity('IfcPropertySingleValue', Name=target_var, NominalValue=source_property.NominalValue)
+                            target_pset.HasProperties.append(target_property)
+                        else: # Set target property to be equal to source property
+                            target_property.NominalValue = source_property.NominalValue
+                            # print(f"Updated {target_pset}.{target_property} to {target_var} for element {element.GlobalId}")
+
+    # Return updated file otherwise unchanged                      
+    return ifc_file
+
+def find_pset(entity, pset_name):
+    '''Find a pset'''
+
+    for definition in entity.IsDefinedBy:
+        if definition.is_a('IfcRelDefinesByProperties'):
+            pset = definition.RelatingPropertyDefinition
+            if pset.is_a('IfcPropertySet') and pset.Name == pset_name:
+                
+                return pset
+    return None
+
+def create_styles2(ifc_file, styles_raw: Dict) -> Dict:
+    """Create IFC styles from JSON settings"""
+    styles = {}
+    
+    for style_name, style_info in styles_raw.items():
+        # Create surface style
+        style = ifc_file.createIfcSurfaceStyle(
+            f"fkb_bygning_{style_name}", 
+            "BOTH"
+        )
+        
+        # Convert RGB values (0-255) to IFC color values (0-1)
+        rgb = style_info["color"]
+        r, g, b = rgb[0] / 255.0, rgb[1] / 255.0, rgb[2] / 255.0
+        
+        # Create surface color
+        surface_color = ifc_file.createIfcColourRgb(None, r, g, b)
+        
+        # Create surface rendering with required ReflectanceMethod
+        surface_rendering = ifc_file.createIfcSurfaceStyleRendering(
+            SurfaceColour=surface_color,
+            Transparency=None,
+            ReflectanceMethod="NOTDEFINED",  # Required in IFC2X3
+            DiffuseColour=None,
+            TransmissionColour=None,
+            DiffuseTransmissionColour=None,
+            ReflectionColour=None,
+            SpecularColour=None,
+            SpecularHighlight=None
+        )
+        
+        # Add rendering to style
+        style.Styles = [surface_rendering]
+        
+        # Store style with its attribute and values
+        styles[style_name] = {
+            'style': style,
+            'attribute': style_info['attribute'],
+            'values': style_info['values']
+        }
+    
+    return styles
