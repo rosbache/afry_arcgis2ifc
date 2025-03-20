@@ -1,11 +1,53 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# #!/usr/bin/env python3
 
 '''
-Description
+afry_bimshape_lib.py
+This library provides functions to create and manipulate IFC files using the ifcopenshell library. It includes functions to create new IFC files, add geometric shapes, assign properties, and apply styles based on attributes. The library is designed to facilitate the creation of building information models (BIM) with a focus on geometric and property data.
+
+Functions:
+    create_new_ifc_file(person_given_name, person_family_name, organization_name)
+        Creates a new IFC file with a basic structure including project, site, building, and building storey.
+
+    create_property_set(ifc_file, owner_history, attributes)
+        Creates an IFC property set with the given attributes
+
+    create_building_element_proxy(ifc_file, owner_history, attributes, local_placement, product_shape, storey)
+        Creates a building element proxy and adds it to the specified storey.
+
+    assign_property_set(ifc_file, owner_history, element, property_set)
+        Assigns a property set to a building element.
+
+    create_volume_from_point(ifc_file, context, owner_history, storey, geometry, size, attributes, styles)
+        Creates a cube in an IFC file from a given point.
+
+    create_volume_from_polygon(ifc_file, context, owner_history, storey, geometry, depth, attributes, styles)
+        Creates a volume from a given polygon geometry and adds it to an IFC file.
+
+    get_matching_style(attributes, styles_info)
+        Finds a matching style based on attributes and style definitions.
+    create_volume_from_linestring(ifc_file, context, owner_history, storey, geometry, radius, attributes, styles)
+        Creates a volume from a linestring geometry in an IFC file.
+    
+    load_style_settings(json_path)
+        Loads FKB style settings from a JSON file.
+
+    create_styles(ifc_file, styles_raw)
+        Creates IFC styles from JSON settings using ifcopenshell.api.
+
+    read_json_mapping_file(json_file)
+        Loads configuration from a JSON file.
+
+    mapping_properties(ifc_file, mapping_rules)
+        Maps attribute values in source property sets to target attributes in target property sets.
+
+    find_pset(entity, pset_name)
+        Finds a property set in an IFC entity.
+
+    create_styles2(ifc_file, styles_raw)
+        Creates IFC styles from JSON settings.
 
 '''
-
 import os
 import json
 import tomllib
@@ -284,6 +326,98 @@ def create_volume_from_point(ifc_file, context, owner_history, storey, geometry,
     
     # Assign property set to the element
     ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
+def create_volume_from_linestring(ifc_file, context, owner_history, storey, geometry, radius=0.1, attributes={}, styles={}):
+    """
+    Creates a volume from a linestring geometry in an IFC file.
+    Args:
+        ifc_file: The IFC file object where the volume will be created.
+        context: The context for the shape representation.
+        owner_history: The owner history for the IFC elements.
+        storey: The building storey where the element will be placed.
+        geometry: The linestring geometry used to create the volume.
+        radius (float, optional): The radius of the swept disk solid. Defaults to 0.1.
+        attributes (dict, optional): A dictionary of attributes for the element. Defaults to {}.
+        styles (dict, optional): A dictionary of styles to apply to the element. Defaults to {}.
+    Returns:
+        None
+    
+    Updates the IFC file with the new volume element.
+    
+    """
+    # Get line coordinates
+    line_coords = list(geometry.coords)
+    # line_points = [ifc_file.createIfcCartesianPoint((x, y, z)) for x, y, z in line_coords]
+    # exterior_coords = list(geometry.exterior.coords)
+    point_coords = []
+    for coord in line_coords:
+        # Check if coordinate has z value
+        if len(coord) == 2:
+            x, y = coord
+            z = 0.0  # Default z value
+        else:
+            x, y, z = coord
+        point_coords.append(ifc_file.createIfcCartesianPoint((x, y, z)))
+    
+    # Create polyline curve
+    polyline = ifc_file.createIfcPolyline(point_coords)
+    # Create placement
+    origin = ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+    axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
+    ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
+    placement = ifc_file.createIfcAxis2Placement3D(origin, axis, ref_direction)
+    local_placement = ifc_file.createIfcLocalPlacement(None, placement)
+
+    # Create swept disk solid
+    swept_disk = ifc_file.createIfcSweptDiskSolid(
+        Directrix=polyline,
+        Radius=radius,  
+        InnerRadius=None,
+        StartParam=0.0,  # Required start parameter
+        EndParam=1.0    # Required end parameter
+    )
+    
+    # Create shape representation
+    shape_representation = ifc_file.createIfcShapeRepresentation(
+        ContextOfItems=context,
+        RepresentationIdentifier="Body",
+        RepresentationType="SweptSolid",
+        Items=[swept_disk]
+    )
+    product_shape = ifc_file.createIfcProductDefinitionShape(
+        None, None, [shape_representation]
+    )
+    # product_shape = ifc_file.createIfcShapeRepresentation(
+    # ContextOfItems=context, RepresentationIdentifier="Body", RepresentationType="SweptSolid", 
+    # Items=[shape_representation]
+    # )
+
+    # Create property set
+    property_set = create_property_set(ifc_file, owner_history, attributes)
+
+    # Create building element proxy
+    element = create_building_element_proxy(ifc_file, owner_history, attributes, local_placement, product_shape, storey)
+    
+    # Assign property set to the element
+    ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
+
+    # Apply style based on attributes
+    matching_style = get_matching_style(attributes, styles)
+    # print(f'Attributes: {attributes}')
+    # print(f'Styles: {styles}') 
+    # print(f'Matching style: {matching_style}')
+    
+  
+    if matching_style and matching_style in styles:
+        style = styles[matching_style]
+        # print(f"Applying style '{matching_style}' to element with attributes: {attributes}")
+        try:
+            ifcopenshell.api.style.assign_representation_styles(
+                ifc_file,
+                shape_representation=shape_representation,
+                styles=[style['style']]  # Use the actual style object from the dictionary
+            )
+        except Exception as e:
+            print(f"Failed to apply style: {e}")
 
 def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometry, depth=0.1, attributes={}, styles={}):
     """
@@ -395,98 +529,6 @@ def get_matching_style(attributes: dict, styles_info: dict) -> str:
                 
     return None
 
-def create_volume_from_linestring(ifc_file, context, owner_history, storey, geometry, radius=0.1, attributes={}, styles={}):
-    """
-    Creates a volume from a linestring geometry in an IFC file.
-    Args:
-        ifc_file: The IFC file object where the volume will be created.
-        context: The context for the shape representation.
-        owner_history: The owner history for the IFC elements.
-        storey: The building storey where the element will be placed.
-        geometry: The linestring geometry used to create the volume.
-        radius (float, optional): The radius of the swept disk solid. Defaults to 0.1.
-        attributes (dict, optional): A dictionary of attributes for the element. Defaults to {}.
-        styles (dict, optional): A dictionary of styles to apply to the element. Defaults to {}.
-    Returns:
-        None
-    
-    Updates the IFC file with the new volume element.
-    
-    """
-    # Get line coordinates
-    line_coords = list(geometry.coords)
-    # line_points = [ifc_file.createIfcCartesianPoint((x, y, z)) for x, y, z in line_coords]
-    # exterior_coords = list(geometry.exterior.coords)
-    point_coords = []
-    for coord in line_coords:
-        # Check if coordinate has z value
-        if len(coord) == 2:
-            x, y = coord
-            z = 0.0  # Default z value
-        else:
-            x, y, z = coord
-        point_coords.append(ifc_file.createIfcCartesianPoint((x, y, z)))
-    
-    # Create polyline curve
-    polyline = ifc_file.createIfcPolyline(point_coords)
-    # Create placement
-    origin = ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0))
-    axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
-    ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
-    placement = ifc_file.createIfcAxis2Placement3D(origin, axis, ref_direction)
-    local_placement = ifc_file.createIfcLocalPlacement(None, placement)
-
-    # Create swept disk solid
-    swept_disk = ifc_file.createIfcSweptDiskSolid(
-        Directrix=polyline,
-        Radius=radius,  
-        InnerRadius=None,
-        StartParam=0.0,  # Required start parameter
-        EndParam=1.0    # Required end parameter
-    )
-    
-    # Create shape representation
-    shape_representation = ifc_file.createIfcShapeRepresentation(
-        ContextOfItems=context,
-        RepresentationIdentifier="Body",
-        RepresentationType="SweptSolid",
-        Items=[swept_disk]
-    )
-    product_shape = ifc_file.createIfcProductDefinitionShape(
-        None, None, [shape_representation]
-    )
-    # product_shape = ifc_file.createIfcShapeRepresentation(
-    # ContextOfItems=context, RepresentationIdentifier="Body", RepresentationType="SweptSolid", 
-    # Items=[shape_representation]
-    # )
-
-    # Create property set
-    property_set = create_property_set(ifc_file, owner_history, attributes)
-
-    # Create building element proxy
-    element = create_building_element_proxy(ifc_file, owner_history, attributes, local_placement, product_shape, storey)
-    
-    # Assign property set to the element
-    ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
-
-    # Apply style based on attributes
-    matching_style = get_matching_style(attributes, styles)
-    # print(f'Attributes: {attributes}')
-    # print(f'Styles: {styles}') 
-    # print(f'Matching style: {matching_style}')
-    
-  
-    if matching_style and matching_style in styles:
-        style = styles[matching_style]
-        # print(f"Applying style '{matching_style}' to element with attributes: {attributes}")
-        try:
-            ifcopenshell.api.style.assign_representation_styles(
-                ifc_file,
-                shape_representation=shape_representation,
-                styles=[style['style']]  # Use the actual style object from the dictionary
-            )
-        except Exception as e:
-            print(f"Failed to apply style: {e}")
 
 def load_style_settings(json_path: str) -> Dict:
     """Load FKB style settings from JSON file"""
