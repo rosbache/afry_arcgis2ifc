@@ -91,6 +91,7 @@ def main():
 
     # Create styles from JSON file
     styles = afry_bimshape_lib.create_styles(ifc_file, styles_raw)
+    print(f"Loaded {len(styles)} styles")
 
     # Get all shapefiles in the input folder
     shapefile_paths = get_shapefiles(args.input_folder)
@@ -119,6 +120,11 @@ def main():
                     ifc_file, context, owner_history, storey,
                     geometry, depth=0.1, attributes=attributes, styles=styles
                 )
+                # centroid = geometry.centroid
+                # afry_bimshape_lib.create_volume_from_point(
+                #     ifc_file, context, owner_history, storey,
+                #     centroid, size=2, attributes=attributes, styles=styles
+                # )
             else:
                 print(f"Geometry type {geometry.geom_type} not supported")
                 continue
@@ -142,4 +148,11 @@ if __name__ == "__main__":
 
     # python gis2bim.py -i "C:\Users\HTO334\OneDrive - AFRY\Documents\GitHub\afry_arcgis2ifc" -o "Matrikkel.ifc" -s "fkb-matrikkel_style.json"
 
+    # python gis2bim.py -i "C:\Users\HTO334\OneDrive - AFRY\Documents\GitHub\afry_arcgis2ifc" -o "Samferdsel2.ifc" -s "fkb-vei_style.json"
+
+    # python gis2bim.py -i "C:\Users\HTO334\OneDrive - AFRY\Documents\GitHub\afry_arcgis2ifc" -o "Stakk_01_gm-eks_GIS_Gatenavn.ifc" -s "fkb-adresse_style.json"
+
+    # python gis2bim.py -i "C:\Users\HTO334\OneDrive - AFRY\Documents\GitHub\afry_arcgis2ifc" -o "Stakk_01_gm-eks_GIS_GNR-BNR.ifc" -s "fkb-matrikkel_style.json"
+
+    # python gis2bim.py -i "C:\Users\HTO334\OneDrive - AFRY\Documents\GitHub\afry_arcgis2ifc" -o "Bygning_gjonnes.ifc" -s "fkb-bygning_style.json"
     
