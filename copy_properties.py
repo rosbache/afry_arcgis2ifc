@@ -31,7 +31,7 @@ import json
 import time
 import argparse
 from datetime import datetime
-
+import os
 import afry_bimshape_lib
 
 def get_geometry_bounds(shape):
@@ -98,6 +98,7 @@ def get_shape_bbox_centroid(ifc_file) -> Dict[str, Tuple[np.ndarray, any, np.nda
 def find_overlapping_bbox(bboxes, centroids):
     """Find overlapping bounding boxes and return mapping"""
     # centroids of volume and bounding box of footprint is used to find overlapping geometries
+
     overlapping = {}
     for bbox_id, (_, _, bbox) in bboxes.items():
         overlapping[bbox_id] = []
@@ -176,6 +177,7 @@ def copy_matching_properties(source_file, target_file, overlapping, styles):
 
     owner_history = target_file.by_type("IfcOwnerHistory")[0]
     styled_count = 0
+    no_match_count = 0
     
     for source_id, matches in overlapping.items():
         source_elem = source_file.by_guid(source_id)
@@ -183,7 +185,8 @@ def copy_matching_properties(source_file, target_file, overlapping, styles):
             continue
             
         if not matches:
-            print(f"No matching elements found for {source_id}")
+            # print(f"No matching elements found for {source_id}")
+            no_match_count += 1
             continue
             
         # Process all matches for this source element
@@ -199,6 +202,7 @@ def copy_matching_properties(source_file, target_file, overlapping, styles):
                 styled_count += 1
 
     print(f"\nApplied styles to {styled_count} elements")
+    print(f"\nNo matches found for {no_match_count} elements")
 
 def apply_style_to_element(element, ifc_file, styles):
     """Apply style to element based on its properties"""
@@ -266,19 +270,20 @@ def main():
     
     # Open IFC files
     print("\nOpening IFC files...")
-    # file_footprint = ifcopenshell.open('Bygning.ifc') # 2D footprint of buildings
-    # file_target = ifcopenshell.open('bygninger_Stakkevollvegen.ifc') # 3D model of buildings
-
-    file_footprint = ifcopenshell.open(args.input_footprint_file) # 2D footprint of buildings
+    print(f"Processing: {os.path.basename(args.input_footprint_file)}")
+    file_footprint = ifcopenshell.open(args.input_footprint_file) # 2D footprint of buildings   
+    print(f"Processing: {os.path.basename(args.input_target_file)}")
     file_target = ifcopenshell.open(args.input_target_file) # 3D model of buildings
     
     # Load styles
     print("\nLoading styles...")
+    print(f"Processing: {os.path.basename(args.style_file)}")
     styles_raw = afry_bimshape_lib.load_style_settings(args.style_file)
     styles = afry_bimshape_lib.create_styles2(file_target, styles_raw)
     print(f"Loaded {len(styles)} styles")
     # print(styles['Bolig'])
 
+    print("\nProessing bounding boxes and centroids...")
     # Get bounding boxes of the 2D footprints
     bboxes = get_geometry_and_location(file_footprint) # 2D footprints
     print(f"Found {len(bboxes)} bounding boxes")
