@@ -2,7 +2,7 @@
     "Bolig": {
         "attribute": "BYGGTYP_NB",
         "values": [111,112,113,121,122,123,124,131,132,133,134,135,136,141,142,143,144,145,146,151,152,159,191,192,193,199],
-        "color": [196, 135, 35]
+        "color": [153, 95, 32]
     },
     "Garasje og uthus": {
         "attribute": "BYGGTYP_NB",
@@ -17,17 +17,17 @@
     "Fritidsbolig": {
         "attribute": "BYGGTYP_NB",
         "values": [161,162,163,171,172],
-        "color": [220, 170, 40]            
+        "color": [214, 135, 35]            
     },
     "Udefinerte bygg": {
         "attribute": "BYGGTYP_NB",
         "values": [0],
-        "color": [196, 135, 35]          
+        "color": [153, 95, 32]          
     },
     "Annen næring": {
         "attribute": "BYGGTYP_NB",
-        "values": [],
-        "color": [115, 163, 212]            
+        "values": [193, 211, 212, 214, 216, 219, 231, 232, 239, 241, 243, 244, 245, 249, 249, 311, 312, 313, 319, 321, 322, 323 ,329, 330, 411, 412, 415, 416, 419, 431, 439, 441, 449, 511, 519, 519, 521 ,522, 523, 524, 529, 531, 532, 523, 524, 529, 531, 532, 533, 539, 611, 612, 613, 614, 615, 616, 619, 621, 623, 629, 641, 642, 643, 649, 651, 652, 653, 654, 655, 659, 661, 662, 663, 669, 671, 672, 673, 674, 675, 679, 719, 721, 722, 723, 729, 731, 732, 739, 821, 822, 823, 830, 999 ],
+        "color": [90, 135, 222]            
     },
     "Annen Bygning": {
         "attribute": "OBJTYPE",
@@ -38,5 +38,31 @@
         "attribute": "OBJTYPE",
         "values": ["Takoverbygg"],
         "color": [0, 0, 0]            
+    },
+    "Pbl tiltak": {
+        "attribute": "OBJTYPE",
+        "values": ["PblTiltak"],
+        "color": [255, 158, 158]            
+    },
+    "Bygning bru": {
+        "attribute": "OBJTYPE",
+        "values": ["Bru"],
+        "color": [0, 0, 0]            
+    },
+    "Kai-brygge": {
+        "attribute": "OBJTYPE",
+        "values": ["KaiBrygge"],
+        "color": [0, 0, 0]            
+    },
+    "Tank": {
+        "attribute": "OBJTYPE",
+        "values": ["Tank"],
+        "color": [0, 0, 0]            
+    },
+    "Bygg og anleggslinjer": {
+        "attribute": "OBJTYPE",
+        "values": ["BautaStatueGrense", "Bruavgrensning", "BrønnGrense","FiskehjellGrense","Flytebryggekant","FrittståendeTrappKant","FundamentKant","KloakkrenseanleggGrense","MurFrittstående", "MurLoddrett","Oppdrettskar", "Pipekant","SkråForstøtningsmurAvgrensnig"],
+        "color": [104, 104, 104]            
     }
 }
+
