@@ -1,0 +1,12 @@
+{
+    "Gatenavn": {
+        "attribute": "OBJTYPE",
+        "values": ["PresGatenavn"],
+        "color": [50, 50, 255]
+    },
+    "Adresse": {
+        "attribute": "OBJTYPE",
+        "values": ["PresAdressepunkt"],
+        "color": [0, 0, 255]
+    }
+}
