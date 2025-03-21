@@ -1,0 +1,97 @@
+{
+    "Gang og sykkelveg": {
+        "attribute": "OBJTYPE",
+        "values": ["GangSykkelveg"],
+        "color": [225, 225, 225]
+    },
+    "Gang- Sykkelvegkant": {
+        "attribute": "OBJTYPE",
+        "values": ["GangSykkelvegkant"],
+        "color": [0, 0, 0]            
+    },
+    "Veg": {
+        "attribute": "OBJTYPE",
+        "values": ["Veg"],
+        "color": [178, 178, 178]            
+    },
+    "Jernbaneplattformkant": {
+        "attribute": "OBJTYPE",
+        "values": ["Jernbaneplattformkant"],
+        "color": [0, 0, 0]            
+    },
+    "Spormidt": {
+        "attribute": "OBJTYPE",
+        "values": ["Spormidt"],
+        "color": [0, 0, 0]            
+    },
+    "Brukonstruksjon": {
+        "attribute": "OBJTYPE",
+        "values": ["Brukonstruksjon"],
+        "color": [156, 156, 156]            
+    },
+    "FortauskantYtre": {
+        "attribute": "OBJTYPE",
+        "values": ["FortauskantYtre"],
+        "color": [0, 0, 0]            
+    },
+    "Kulvert": {
+        "attribute": "OBJTYPE",
+        "values": ["Kulvert"],
+        "color": [0, 0, 0]            
+    },
+    "ParkeringsområdeAvgrensning": {
+        "attribute": "OBJTYPE",
+        "values": ["ParkeringsområdeAvgrensning"],
+        "color": [104, 104, 104]            
+    },
+    "Sti": {
+        "attribute": "OBJTYPE",
+        "values": ["Sti"],
+        "color": [195, 30, 40]            
+    },
+    "Støyskjerm": {
+        "attribute": "OBJTYPE",
+        "values": ["Støyskjerm"],
+        "color": [130, 130, 130]            
+    },
+    "Traktorvegkant": {
+        "attribute": "OBJTYPE",
+        "values": ["Traktorvegkant"],
+        "color": [0, 0, 0]            
+    },
+    "Traktorveg":{
+        "attribute": "OBJTYPE",
+        "values": ["Traktorveg"],
+        "color": [178, 178, 178]            
+    },
+    "VegkantAnnenVegareal":{
+        "attribute": "OBJTYPE",
+        "values": ["VegkantAnnenVegareal"],
+        "color": [0, 0, 0]            
+    },
+    "Vegdekkekant":{
+        "attribute": "OBJTYPE",
+        "values": ["Vegdekkekant"],
+        "color": [0, 0, 0]            
+    },
+    "AnnetVegarealAvgrensning":{
+        "attribute": "OBJTYPE",
+        "values": ["AnnetVegarealAvgrensning"],
+        "color": [130, 130, 130]            
+    },
+    "VegkantAvkjørsel":{
+        "attribute": "OBJTYPE",
+        "values": ["VegkantAvkjørsel"],
+        "color": [0, 0, 0]            
+    },
+    "Trafikkøykant":{
+        "attribute": "OBJTYPE",
+        "values": ["Trafikkøykant"],
+        "color": [0, 0, 0]            
+    },
+    "Vegsperring": {
+        "attribute": "OBJTYPE",
+        "values": ["Vegsperring"],
+        "color": [0, 0, 0]            
+    }
+}

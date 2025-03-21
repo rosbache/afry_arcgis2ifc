@@ -1,0 +1,12 @@
+{
+    "Eiendomsgrense": {
+        "attribute": "OBJTYPE",
+        "values": ["Teiggrense"],
+        "color": [255, 0, 0]
+    },
+    "Teig": {
+        "attribute": "OBJTYPE",
+        "values": ["Teig"],
+        "color": [255, 225, 200]
+    }
+}
