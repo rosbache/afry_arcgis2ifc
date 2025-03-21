@@ -269,7 +269,7 @@ def create_volume_from_point(ifc_file, context, owner_history, storey, geometry,
         None
     """
     # Create placement for the cube
-    point_coords = (geometry.x, geometry.y, geometry.z) # Assuming z=0 for simplicity
+    point_coords = (geometry.x, geometry.y) # Assuming z=0 for simplicity
     origin = ifc_file.createIfcCartesianPoint(point_coords) # TODO should be possible to set an origin point
     axis = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
     ref_direction = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
@@ -326,7 +326,7 @@ def create_volume_from_point(ifc_file, context, owner_history, storey, geometry,
     
     # Assign property set to the element
     ifc_file = assign_property_set(ifc_file, owner_history, element, property_set)
-def create_volume_from_linestring(ifc_file, context, owner_history, storey, geometry, radius=0.1, attributes={}, styles={}):
+def create_volume_from_linestring(ifc_file, context, owner_history, storey, geometry, radius=0.1, attributes={}, styles={}, z_value=0.0):
     """
     Creates a volume from a linestring geometry in an IFC file.
     Args:
@@ -353,7 +353,7 @@ def create_volume_from_linestring(ifc_file, context, owner_history, storey, geom
         # Check if coordinate has z value
         if len(coord) == 2:
             x, y = coord
-            z = 0.0  # Default z value
+            z = z_value
         else:
             x, y, z = coord
         point_coords.append(ifc_file.createIfcCartesianPoint((x, y, z)))
@@ -419,7 +419,7 @@ def create_volume_from_linestring(ifc_file, context, owner_history, storey, geom
         except Exception as e:
             print(f"Failed to apply style: {e}")
 
-def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometry, depth=0.1, attributes={}, styles={}):
+def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometry, depth=0.1, attributes={}, styles={}, z_value=0.0):
     """
     Creates a volume from a given polygon geometry and adds it to an IFC file.
     Args:
@@ -444,7 +444,7 @@ def create_volume_from_polygon(ifc_file, context, owner_history, storey, geometr
         # Check if coordinate has z value
         if len(coord) == 2:
             x, y = coord
-            z = 0.0  # Default z value
+            z = z_value  # Default z value is 0.0
         else:
             x, y, z = coord
         point_coords.append(ifc_file.createIfcCartesianPoint((x, y, z)))
