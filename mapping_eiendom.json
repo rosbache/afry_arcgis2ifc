@@ -1,0 +1,14 @@
+[
+    {
+        "PsetName": "SourcePsetName",
+        "Variables": {
+            "SourceVariableName": "TargetValue"
+        }
+    },
+    {
+        "PsetName": "AnotherSourcePset",
+        "Variables": {
+            "AnotherSourceVariable": "AnotherTargetValue"
+        }
+    }
+]
