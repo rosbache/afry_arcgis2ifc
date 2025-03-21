@@ -281,7 +281,19 @@ def main():
     styles_raw = afry_bimshape_lib.load_style_settings(args.style_file)
     styles = afry_bimshape_lib.create_styles2(file_target, styles_raw)
     print(f"Loaded {len(styles)} styles")
-    # print(styles['Bolig'])
+    # # Load styles from the specified folder
+    # print("\nLoading styles...")
+    # style_folder = args.style_file
+    # styles = {}
+
+    # for style_file in os.listdir(style_folder):
+    #     if style_file.endswith('.json'):
+    #         style_path = os.path.join(style_folder, style_file)
+    #         print(f"Processing: {os.path.basename(style_path)}")
+    #         styles_raw = afry_bimshape_lib.load_style_settings(style_path)
+    #         styles.update(afry_bimshape_lib.create_styles2(file_target, styles_raw))
+
+    # print(f"Loaded {len(styles)} styles from {len(os.listdir(style_folder))} files")
 
     print("\nProessing bounding boxes and centroids...")
     # Get bounding boxes of the 2D footprints
